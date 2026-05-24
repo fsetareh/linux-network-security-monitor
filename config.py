@@ -16,3 +16,10 @@ BLACKLISTED_IPS = [
     "91.200.12.77",
     "45.133.1.1"
 ]
+SUSPICIOUS_PROCESSES = [
+    "powershell.exe",
+    "cmd.exe",
+    "nc.exe",
+    "nmap.exe",
+    "mimikatz.exe"
+]

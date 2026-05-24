@@ -14,7 +14,6 @@ LOG_FILE = "logs/network_logs.txt"
 
 
 def is_external_ip(ip):
-
     try:
         ip_obj = ipaddress.ip_address(ip)
 
@@ -31,18 +30,29 @@ def is_external_ip(ip):
 
 
 def write_log(message):
-
     with open(LOG_FILE, "a", encoding="utf-8") as file:
         file.write(message + "\n")
 
 
-print(Fore.CYAN + "\n=== Linux Network Security Monitor V5 ===")
+def get_process_name(pid):
+    try:
+        if pid is None:
+            return "unknown"
+
+        process = psutil.Process(pid)
+        return process.name()
+
+    except Exception:
+        return "unknown"
+
+
+print(Fore.CYAN + "\n=== Linux Network Security Monitor V6 ===")
 print(Fore.CYAN + "Monitoring active network traffic...")
-print(Fore.CYAN + "Logging security events...\n")
+print(Fore.CYAN + "Logging security events...")
+print(Fore.CYAN + "Detecting suspicious processes...\n")
 
 
 while True:
-
     print(Fore.YELLOW + "\n=== ACTIVE CONNECTIONS ===\n")
 
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -56,9 +66,9 @@ while True:
 
     suspicious_count = 0
     external_count = 0
+    process_alert_count = 0
 
     for conn in connections[:40]:
-
         try:
             local_ip = conn.laddr.ip if conn.laddr else "N/A"
             local_port = conn.laddr.port if conn.laddr else "N/A"
@@ -71,6 +81,7 @@ while True:
                 remote_port = conn.raddr.port
 
             status = conn.status
+            process_name = get_process_name(conn.pid)
 
             external_connection = (
                 remote_ip != "N/A" and
@@ -82,11 +93,16 @@ while True:
 
             alerts = detect_suspicious_activity(
                 local_port,
-                remote_ip
+                remote_ip,
+                process_name
             )
 
             if alerts:
                 suspicious_count += 1
+
+            for alert in alerts:
+                if "[PROCESS ALERT]" in alert:
+                    process_alert_count += 1
 
             color = Fore.GREEN
 
@@ -100,22 +116,16 @@ while True:
                 f"[{timestamp}] "
                 f"LOCAL: {local_ip}:{local_port} | "
                 f"REMOTE: {remote_ip}:{remote_port} | "
-                f"STATUS: {status}"
+                f"STATUS: {status} | "
+                f"PROCESS: {process_name}"
             )
 
             print(color + connection_message)
-
             write_log(connection_message)
 
             for alert in alerts:
-
-                alert_message = (
-                    f"[{timestamp}] "
-                    f"{alert}"
-                )
-
+                alert_message = f"[{timestamp}] {alert}"
                 print(alert)
-
                 write_log(alert_message)
 
         except Exception:
@@ -125,13 +135,15 @@ while True:
         f"\n[{timestamp}] "
         f"Connections checked: {len(connections)} | "
         f"External: {external_count} | "
-        f"Suspicious: {suspicious_count}\n"
+        f"Suspicious: {suspicious_count} | "
+        f"Process Alerts: {process_alert_count}\n"
     )
 
     print(Fore.CYAN + "\n=== Scan Summary ===")
     print(Fore.CYAN + f"Connections checked: {len(connections)}")
     print(Fore.CYAN + f"External connections: {external_count}")
     print(Fore.RED + f"Suspicious connections: {suspicious_count}")
+    print(Fore.YELLOW + f"Process alerts: {process_alert_count}")
 
     write_log(summary)
 
