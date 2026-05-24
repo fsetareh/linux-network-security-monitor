@@ -2,15 +2,15 @@ import psutil
 import time
 import ipaddress
 from datetime import datetime
-
 from colorama import Fore, init
 
-from config import MONITOR_INTERVAL
+from config import MONITOR_INTERVAL, NETWORK_LOG
 from detector import detect_suspicious_activity
+from reporter import generate_reports
 
 init(autoreset=True)
 
-LOG_FILE = "logs/network_logs.txt"
+events = []
 
 
 def is_external_ip(ip):
@@ -29,11 +29,6 @@ def is_external_ip(ip):
         return False
 
 
-def write_log(message):
-    with open(LOG_FILE, "a", encoding="utf-8") as file:
-        file.write(message + "\n")
-
-
 def get_process_name(pid):
     try:
         if pid is None:
@@ -46,27 +41,27 @@ def get_process_name(pid):
         return "unknown"
 
 
-print(Fore.CYAN + "\n=== Linux Network Security Monitor V6 ===")
-print(Fore.CYAN + "Monitoring active network traffic...")
-print(Fore.CYAN + "Logging security events...")
-print(Fore.CYAN + "Detecting suspicious processes...\n")
+def write_log(message):
+    with open(NETWORK_LOG, "a", encoding="utf-8") as file:
+        file.write(message + "\n")
+
+
+print(Fore.CYAN + "\n=== Linux Network Security Monitor V14 ===")
+print(Fore.CYAN + "Real-time monitoring started...")
+print(Fore.CYAN + "HTML dashboard auto-refresh enabled.")
+print(Fore.CYAN + "Press Ctrl + C to stop.\n")
 
 
 while True:
-    print(Fore.YELLOW + "\n=== ACTIVE CONNECTIONS ===\n")
-
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     try:
         connections = psutil.net_connections(kind="inet")
-
     except psutil.AccessDenied:
         print(Fore.RED + "Access denied.")
         connections = []
 
-    suspicious_count = 0
-    external_count = 0
-    process_alert_count = 0
+    print(Fore.YELLOW + "\n=== ACTIVE CONNECTIONS ===\n")
 
     for conn in connections[:40]:
         try:
@@ -83,68 +78,64 @@ while True:
             status = conn.status
             process_name = get_process_name(conn.pid)
 
-            external_connection = (
-                remote_ip != "N/A" and
-                is_external_ip(remote_ip)
-            )
+            external = remote_ip != "N/A" and is_external_ip(remote_ip)
 
-            if external_connection:
-                external_count += 1
-
-            alerts = detect_suspicious_activity(
+            alerts, ml_score, severity, country = detect_suspicious_activity(
                 local_port,
                 remote_ip,
+                external,
                 process_name
             )
 
-            if alerts:
-                suspicious_count += 1
+            event = {
+                "timestamp": timestamp,
+                "local": f"{local_ip}:{local_port}",
+                "remote": f"{remote_ip}:{remote_port}",
+                "status": status,
+                "process": process_name,
+                "external": external,
+                "country": country,
+                "alerts": alerts,
+                "ml_score": ml_score,
+                "severity": severity
+            }
 
-            for alert in alerts:
-                if "[PROCESS ALERT]" in alert:
-                    process_alert_count += 1
+            events.append(event)
 
             color = Fore.GREEN
 
-            if alerts:
+            if severity in ["HIGH", "CRITICAL"]:
                 color = Fore.RED
-
-            elif external_connection:
+            elif severity == "MEDIUM":
+                color = Fore.YELLOW
+            elif external:
                 color = Fore.CYAN
 
-            connection_message = (
+            message = (
                 f"[{timestamp}] "
-                f"LOCAL: {local_ip}:{local_port} | "
-                f"REMOTE: {remote_ip}:{remote_port} | "
+                f"{event['local']} -> {event['remote']} | "
                 f"STATUS: {status} | "
-                f"PROCESS: {process_name}"
+                f"PROCESS: {process_name} | "
+                f"SEVERITY: {severity} | "
+                f"ML SCORE: {ml_score}"
             )
 
-            print(color + connection_message)
-            write_log(connection_message)
+            print(color + message)
+            write_log(message)
 
             for alert in alerts:
-                alert_message = f"[{timestamp}] {alert}"
-                print(alert)
-                write_log(alert_message)
+                print(Fore.RED + f"[ALERT] {alert}")
+                write_log(f"[{timestamp}] [ALERT] {alert}")
 
         except Exception:
             continue
 
-    summary = (
-        f"\n[{timestamp}] "
-        f"Connections checked: {len(connections)} | "
-        f"External: {external_count} | "
-        f"Suspicious: {suspicious_count} | "
-        f"Process Alerts: {process_alert_count}\n"
-    )
+    generate_reports(events[-200:])
 
     print(Fore.CYAN + "\n=== Scan Summary ===")
     print(Fore.CYAN + f"Connections checked: {len(connections)}")
-    print(Fore.CYAN + f"External connections: {external_count}")
-    print(Fore.RED + f"Suspicious connections: {suspicious_count}")
-    print(Fore.YELLOW + f"Process alerts: {process_alert_count}")
-
-    write_log(summary)
+    print(Fore.CYAN + f"Events stored: {len(events)}")
+    print(Fore.CYAN + "Dashboard updated: reports/dashboard.html")
+    print(Fore.CYAN + "Reports updated.\n")
 
     time.sleep(MONITOR_INTERVAL)

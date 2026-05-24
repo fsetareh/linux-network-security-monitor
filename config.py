@@ -5,6 +5,10 @@ SUSPICIOUS_PORTS = [
     22,
     23,
     25,
+    53,
+    135,
+    139,
+    445,
     3389,
     4444,
     5555,
@@ -16,10 +20,24 @@ BLACKLISTED_IPS = [
     "91.200.12.77",
     "45.133.1.1"
 ]
+
 SUSPICIOUS_PROCESSES = [
-    "powershell.exe",
-    "cmd.exe",
-    "nc.exe",
-    "nmap.exe",
-    "mimikatz.exe"
+    "nmap",
+    "wireshark",
+    "metasploit",
+    "nc",
+    "netcat",
+    "hydra",
+    "powershell",
+    "cmd"
 ]
+
+REPORT_HTML = "reports/dashboard.html"
+
+REPORT_JSON = "reports/network_report.json"
+
+REPORT_TXT = "reports/network_report.txt"
+
+NETWORK_LOG = "logs/network_logs.txt"
+
+EMAIL_ALERT_LOG = "logs/email_alerts_simulated.txt"
