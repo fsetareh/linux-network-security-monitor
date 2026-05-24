@@ -1,6 +1,7 @@
 import psutil
 import time
 import ipaddress
+from datetime import datetime
 
 from colorama import Fore, init
 
@@ -8,6 +9,8 @@ from config import MONITOR_INTERVAL
 from detector import detect_suspicious_activity
 
 init(autoreset=True)
+
+LOG_FILE = "logs/network_logs.txt"
 
 
 def is_external_ip(ip):
@@ -27,14 +30,22 @@ def is_external_ip(ip):
         return False
 
 
-print(Fore.CYAN + "\n=== Linux Network Security Monitor V4 ===")
+def write_log(message):
+
+    with open(LOG_FILE, "a", encoding="utf-8") as file:
+        file.write(message + "\n")
+
+
+print(Fore.CYAN + "\n=== Linux Network Security Monitor V5 ===")
 print(Fore.CYAN + "Monitoring active network traffic...")
-print(Fore.CYAN + "Detecting suspicious connections...\n")
+print(Fore.CYAN + "Logging security events...\n")
 
 
 while True:
 
     print(Fore.YELLOW + "\n=== ACTIVE CONNECTIONS ===\n")
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     try:
         connections = psutil.net_connections(kind="inet")
@@ -85,22 +96,43 @@ while True:
             elif external_connection:
                 color = Fore.CYAN
 
-            print(
-                color +
+            connection_message = (
+                f"[{timestamp}] "
                 f"LOCAL: {local_ip}:{local_port} | "
                 f"REMOTE: {remote_ip}:{remote_port} | "
                 f"STATUS: {status}"
             )
 
+            print(color + connection_message)
+
+            write_log(connection_message)
+
             for alert in alerts:
+
+                alert_message = (
+                    f"[{timestamp}] "
+                    f"{alert}"
+                )
+
                 print(alert)
+
+                write_log(alert_message)
 
         except Exception:
             continue
+
+    summary = (
+        f"\n[{timestamp}] "
+        f"Connections checked: {len(connections)} | "
+        f"External: {external_count} | "
+        f"Suspicious: {suspicious_count}\n"
+    )
 
     print(Fore.CYAN + "\n=== Scan Summary ===")
     print(Fore.CYAN + f"Connections checked: {len(connections)}")
     print(Fore.CYAN + f"External connections: {external_count}")
     print(Fore.RED + f"Suspicious connections: {suspicious_count}")
 
-    time.sleep(MONITOR_INTERVAL) 
+    write_log(summary)
+
+    time.sleep(MONITOR_INTERVAL)
