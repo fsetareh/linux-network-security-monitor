@@ -63,8 +63,8 @@ linux-network-security-monitor/
 
 ## Dashboard
 
-![Dashboard](screenshots/dashboard_v14.png)
+![Dashboard](./screenshots/dashboard_v14.png)
 
-## Live Terminal Monitoring
+## Live Monitoring
 
 ![Terminal Monitoring](screenshots/live_terminal_monitoring.png)
