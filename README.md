@@ -57,3 +57,14 @@ linux-network-security-monitor/
 ├── requirements.txt
 ├── README.md
 └── .gitignore
+---
+
+# Screenshots
+
+## Dashboard
+
+![Dashboard](screenshots/dashboard_v14.png)
+
+## Live Terminal Monitoring
+
+![Terminal Monitoring](screenshots/live_terminal_monitoring.png)
