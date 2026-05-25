@@ -63,8 +63,8 @@ linux-network-security-monitor/
 
 ## Dashboard
 
-![Dashboard](./screenshots/dashboard_v14.png)
+![Web based security dashboard with dark blue layout showing network threat metrics and alert summaries in a browser style report page. Visible text includes Total Events 200, External 76, Suspicious 86, Critical 0, High 0, the severity summary table listing LOW 200, the geo IP simulation table listing Country Unknown and Events 200, and a network events table with timestamped connections and alerts such as External network connection detected](./screenshots/dashboard_v14.png)
 
 ## Live Monitoring
 
-![Terminal Monitoring](screenshots/live_terminal_monitoring.png)
+![Terminal screenshot with real time network security alerts on a dark background, showing green and red status lines, repeated alert text including ALERT External network connection detected, and a scan summary at the bottom](screenshots/live_terminal_monitoring.png)
